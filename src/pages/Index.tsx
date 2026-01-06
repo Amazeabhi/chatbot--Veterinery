@@ -1,16 +1,12 @@
 import { ChatContainer } from '@/components/ChatContainer';
-import { Helmet } from 'react-helmet-async';
+import { useEffect } from 'react';
 
 const Index = () => {
-  return (
-    <>
-      <Helmet>
-        <title>AI Chatbot - Your Intelligent Assistant</title>
-        <meta name="description" content="Chat with our AI assistant powered by OpenRouter. Get instant answers to your questions." />
-      </Helmet>
-      <ChatContainer />
-    </>
-  );
+  useEffect(() => {
+    document.title = 'AI Chatbot - Your Intelligent Assistant';
+  }, []);
+
+  return <ChatContainer />;
 };
 
 export default Index;
