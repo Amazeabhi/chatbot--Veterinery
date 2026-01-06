@@ -2,7 +2,7 @@ import { useEffect, useRef } from 'react';
 import { ChatMessage } from './ChatMessage';
 import { ChatInput } from './ChatInput';
 import { useChat } from '@/hooks/useChat';
-import { Bot, MessageSquare, Trash2 } from 'lucide-react';
+import { PawPrint, MessageSquare, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 
@@ -33,11 +33,11 @@ export function ChatContainer() {
       <header className="flex items-center justify-between border-b border-border bg-card/50 backdrop-blur-sm px-4 py-3 sticky top-0 z-10">
         <div className="flex items-center gap-3">
           <div className="flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-br from-primary to-accent">
-            <Bot className="h-5 w-5 text-primary-foreground" />
+            <PawPrint className="h-5 w-5 text-primary-foreground" />
           </div>
           <div>
-            <h1 className="text-lg font-semibold text-foreground">AI Assistant</h1>
-            <p className="text-xs text-muted-foreground">Powered by OpenRouter</p>
+            <h1 className="text-lg font-semibold text-foreground">Pet Care Assistant</h1>
+            <p className="text-xs text-muted-foreground">Ask about any pet in our database</p>
           </div>
         </div>
         {messages.length > 0 && (
@@ -63,15 +63,35 @@ export function ChatContainer() {
             <div className="relative mb-6">
               <div className="absolute inset-0 bg-primary/20 blur-3xl rounded-full" />
               <div className="relative flex h-20 w-20 items-center justify-center rounded-full bg-gradient-to-br from-primary/20 to-accent/20 border border-border">
-                <MessageSquare className="h-10 w-10 text-primary" />
+                <PawPrint className="h-10 w-10 text-primary" />
               </div>
             </div>
             <h2 className="text-xl font-semibold text-foreground mb-2">
-              How can I help you today?
+              Pet Care Assistant
             </h2>
-            <p className="text-muted-foreground max-w-sm">
-              Ask me anything! I'm here to assist with questions, ideas, or just a friendly chat.
+            <p className="text-muted-foreground max-w-sm mb-4">
+              I have access to a database of 36 pets including dogs, cats, cows, goats, parrots, and rabbits. Ask me anything!
             </p>
+            <div className="flex flex-wrap gap-2 justify-center max-w-md">
+              <button 
+                onClick={() => sendMessage("Tell me about Tiger the dog")}
+                className="px-3 py-1.5 text-sm bg-card border border-border rounded-full hover:bg-accent transition-colors"
+              >
+                Tell me about Tiger
+              </button>
+              <button 
+                onClick={() => sendMessage("Which pets are overweight?")}
+                className="px-3 py-1.5 text-sm bg-card border border-border rounded-full hover:bg-accent transition-colors"
+              >
+                Overweight pets?
+              </button>
+              <button 
+                onClick={() => sendMessage("List all pets owned by Arun Rao")}
+                className="px-3 py-1.5 text-sm bg-card border border-border rounded-full hover:bg-accent transition-colors"
+              >
+                Arun Rao's pets
+              </button>
+            </div>
           </div>
         ) : (
           messages.map((message) => (
@@ -82,7 +102,7 @@ export function ChatContainer() {
         {isLoading && messages[messages.length - 1]?.role !== 'assistant' && (
           <div className="flex gap-3">
             <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-accent text-accent-foreground">
-              <Bot className="h-4 w-4" />
+              <PawPrint className="h-4 w-4" />
             </div>
             <div className="flex items-center gap-1.5 rounded-2xl rounded-bl-sm bg-card border border-border px-4 py-3">
               <span className="h-2 w-2 rounded-full bg-primary/60 animate-bounce" style={{ animationDelay: '0ms' }} />
