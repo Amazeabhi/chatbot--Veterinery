@@ -5,6 +5,26 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
+// Input validation for chat messages
+interface ChatMessage {
+  role: 'user' | 'assistant' | 'system';
+  content: string;
+}
+
+function validateMessages(messages: unknown): messages is ChatMessage[] {
+  if (!Array.isArray(messages)) return false;
+  if (messages.length === 0 || messages.length > 100) return false;
+  
+  return messages.every(msg => {
+    if (!msg || typeof msg !== 'object') return false;
+    const m = msg as Record<string, unknown>;
+    if (!['user', 'assistant', 'system'].includes(m.role as string)) return false;
+    if (typeof m.content !== 'string') return false;
+    if ((m.content as string).length > 10000) return false; // 10KB limit per message
+    return true;
+  });
+}
+
 const petDatabase = [
   {
     "name": "Tiger",
@@ -421,11 +441,21 @@ serve(async (req) => {
 
   try {
     const { messages } = await req.json();
+    
+    // Validate input messages
+    if (!validateMessages(messages)) {
+      console.log('Invalid message format received');
+      return new Response(JSON.stringify({ error: 'Invalid message format' }), {
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+    
     const OPENROUTER_API_KEY = Deno.env.get('OPENROUTER_API_KEY');
     
     if (!OPENROUTER_API_KEY) {
       console.error('OPENROUTER_API_KEY is not configured');
-      throw new Error('OPENROUTER_API_KEY is not configured');
+      throw new Error('API configuration error');
     }
 
     const systemPrompt = `You are a helpful, knowledgeable pet care assistant with access to a comprehensive database of pets and their owners. You can answer questions about specific pets, their health, diet, behavior, and provide personalized care recommendations.
@@ -444,7 +474,8 @@ When users ask about pets:
 
 Be friendly, professional, and thorough in your responses. If asked about a pet not in the database, let the user know and offer general advice instead.`;
 
-    console.log('Sending request to OpenRouter with messages:', JSON.stringify(messages));
+    // Log only non-sensitive metadata
+    console.log('Processing chat request with', messages.length, 'messages');
 
     const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
       method: 'POST',
@@ -465,8 +496,8 @@ Be friendly, professional, and thorough in your responses. If asked about a pet 
     });
 
     if (!response.ok) {
-      const errorText = await response.text();
-      console.error('OpenRouter API error:', response.status, errorText);
+      // Log status only, not error details that may contain sensitive info
+      console.error('OpenRouter API error, status:', response.status);
       
       if (response.status === 429) {
         return new Response(JSON.stringify({ error: 'Rate limit exceeded. Please try again later.' }), {
@@ -487,8 +518,9 @@ Be friendly, professional, and thorough in your responses. If asked about a pet 
       headers: { ...corsHeaders, 'Content-Type': 'text/event-stream' },
     });
   } catch (error) {
-    console.error('Chat function error:', error);
-    return new Response(JSON.stringify({ error: error instanceof Error ? error.message : 'Unknown error' }), {
+    // Log generic error without sensitive details
+    console.error('Chat function error occurred');
+    return new Response(JSON.stringify({ error: 'An error occurred. Please try again.' }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
