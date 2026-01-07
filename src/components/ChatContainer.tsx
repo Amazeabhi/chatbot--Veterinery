@@ -2,10 +2,10 @@ import { useEffect, useRef } from 'react';
 import { ChatMessage } from './ChatMessage';
 import { ChatInput } from './ChatInput';
 import { useChat } from '@/hooks/useChat';
-import { PawPrint, MessageSquare, Trash2 } from 'lucide-react';
+import { PawPrint, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
-
+import { ThemeToggle } from './ThemeToggle';
 export function ChatContainer() {
   const { messages, isLoading, error, sendMessage, clearMessages } = useChat();
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -40,17 +40,20 @@ export function ChatContainer() {
             <p className="text-xs text-muted-foreground">Ask about any pet in our database</p>
           </div>
         </div>
-        {messages.length > 0 && (
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={clearMessages}
-            className="text-muted-foreground hover:text-destructive"
-          >
-            <Trash2 className="h-4 w-4 mr-1" />
-            Clear
-          </Button>
-        )}
+        <div className="flex items-center gap-3">
+          <ThemeToggle />
+          {messages.length > 0 && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={clearMessages}
+              className="text-muted-foreground hover:text-destructive"
+            >
+              <Trash2 className="h-4 w-4 mr-1" />
+              Clear
+            </Button>
+          )}
+        </div>
       </header>
 
       {/* Messages */}
