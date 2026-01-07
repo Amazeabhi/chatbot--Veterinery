@@ -26,6 +26,3 @@ The **Vet Chatbot** is an AI-powered conversational application designed to assi
 
 ---
 
-## 📂 Project Structure
-
-
