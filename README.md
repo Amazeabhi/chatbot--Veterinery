@@ -3,6 +3,8 @@
 The **Vet Chatbot** is an AI-powered conversational application designed to assist pet owners with basic veterinary guidance. It provides instant responses to common pet health queries, symptoms, vaccinations, nutrition, and general care, helping users make informed decisions before visiting a veterinarian.
 
 ---
+[![Launch Vet Chatbot](https://img.shields.io/badge/🚀%20Launch-Vet%20Chatbot-brightgreen?style=for-the-badge)](https://vet-chatbot.lovable.app)
+----
 
 ## 🚀 Features
 
