@@ -1,15 +1,40 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState, useCallback } from 'react';
 import { ChatMessage } from './ChatMessage';
 import { ChatInput } from './ChatInput';
-import { useChat } from '@/hooks/useChat';
+import { useChat, Message } from '@/hooks/useChat';
 import { PawPrint, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { ThemeToggle } from './ThemeToggle';
+import { HistorySidebar } from './HistorySidebar';
+import { SidebarProvider, SidebarTrigger } from '@/components/ui/sidebar';
+
+interface ChatSession {
+  id: string;
+  title: string;
+  timestamp: Date;
+  messages: Message[];
+  isActive: boolean;
+}
+
 export function ChatContainer() {
-  const { messages, isLoading, error, sendMessage, clearMessages } = useChat();
+  const { messages, isLoading, error, sendMessage, clearMessages, setMessages } = useChat();
   const scrollRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
+  
+  const [sessions, setSessions] = useState<ChatSession[]>([]);
+  const [activeSessionId, setActiveSessionId] = useState<string | null>(null);
+
+  // Save current chat to session when messages change
+  useEffect(() => {
+    if (messages.length > 0 && activeSessionId) {
+      setSessions(prev => prev.map(s => 
+        s.id === activeSessionId 
+          ? { ...s, messages, title: messages[0]?.content.slice(0, 30) + '...' || 'New Chat' }
+          : s
+      ));
+    }
+  }, [messages, activeSessionId]);
 
   useEffect(() => {
     if (scrollRef.current) {
@@ -27,101 +52,150 @@ export function ChatContainer() {
     }
   }, [error, toast]);
 
-  return (
-    <div className="flex h-screen flex-col bg-background">
-      {/* Header */}
-      <header className="flex items-center justify-between border-b border-border bg-card/50 backdrop-blur-sm px-4 py-3 sticky top-0 z-10">
-        <div className="flex items-center gap-3">
-          <div className="flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-br from-primary to-accent">
-            <PawPrint className="h-5 w-5 text-primary-foreground" />
-          </div>
-          <div>
-            <h1 className="text-lg font-semibold text-foreground">Pet Care Assistant</h1>
-            <p className="text-xs text-muted-foreground">Ask about any pet in our database</p>
-          </div>
-        </div>
-        <div className="flex items-center gap-3">
-          <ThemeToggle />
-          {messages.length > 0 && (
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={clearMessages}
-              className="text-muted-foreground hover:text-destructive"
-            >
-              <Trash2 className="h-4 w-4 mr-1" />
-              Clear
-            </Button>
-          )}
-        </div>
-      </header>
+  const handleNewChat = useCallback(() => {
+    const newSession: ChatSession = {
+      id: crypto.randomUUID(),
+      title: 'New Chat',
+      timestamp: new Date(),
+      messages: [],
+      isActive: true,
+    };
+    
+    setSessions(prev => prev.map(s => ({ ...s, isActive: false })).concat(newSession));
+    setActiveSessionId(newSession.id);
+    clearMessages();
+  }, [clearMessages]);
 
-      {/* Messages */}
-      <div
-        ref={scrollRef}
-        className="flex-1 overflow-y-auto px-4 py-6 space-y-4"
-      >
-        {messages.length === 0 ? (
-          <div className="flex flex-col items-center justify-center h-full text-center">
-            <div className="relative mb-6">
-              <div className="absolute inset-0 bg-primary/20 blur-3xl rounded-full" />
-              <div className="relative flex h-20 w-20 items-center justify-center rounded-full bg-gradient-to-br from-primary/20 to-accent/20 border border-border">
-                <PawPrint className="h-10 w-10 text-primary" />
+  const handleSelectSession = useCallback((id: string) => {
+    const session = sessions.find(s => s.id === id);
+    if (session) {
+      setSessions(prev => prev.map(s => ({ ...s, isActive: s.id === id })));
+      setActiveSessionId(id);
+      setMessages(session.messages);
+    }
+  }, [sessions, setMessages]);
+
+  // Create initial session if none exists
+  useEffect(() => {
+    if (sessions.length === 0 && messages.length > 0) {
+      const newSession: ChatSession = {
+        id: crypto.randomUUID(),
+        title: messages[0]?.content.slice(0, 30) + '...' || 'New Chat',
+        timestamp: new Date(),
+        messages,
+        isActive: true,
+      };
+      setSessions([newSession]);
+      setActiveSessionId(newSession.id);
+    }
+  }, [messages, sessions.length]);
+
+  return (
+    <SidebarProvider>
+      <div className="flex h-screen w-full">
+        <HistorySidebar 
+          sessions={sessions}
+          onNewChat={handleNewChat}
+          onSelectSession={handleSelectSession}
+        />
+        
+        <div className="flex flex-1 flex-col bg-background">
+          {/* Header */}
+          <header className="flex items-center justify-between border-b border-border bg-card/50 backdrop-blur-sm px-4 py-3 sticky top-0 z-10">
+            <div className="flex items-center gap-3">
+              <SidebarTrigger className="h-8 w-8 md:hidden" />
+              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-br from-primary to-accent">
+                <PawPrint className="h-5 w-5 text-primary-foreground" />
+              </div>
+              <div>
+                <h1 className="text-lg font-semibold text-foreground">Pet Care Assistant</h1>
+                <p className="text-xs text-muted-foreground">Ask about any pet in our database</p>
               </div>
             </div>
-            <h2 className="text-xl font-semibold text-foreground mb-2">
-              Pet Care Assistant
-            </h2>
-            <p className="text-muted-foreground max-w-sm mb-4">
-              I have access to a database of 36 pets including dogs, cats, cows, goats, parrots, and rabbits. Ask me anything!
-            </p>
-            <div className="flex flex-wrap gap-2 justify-center max-w-md">
-              <button 
-                onClick={() => sendMessage("Tell me about Tiger the dog")}
-                className="px-3 py-1.5 text-sm bg-card border border-border rounded-full hover:bg-accent transition-colors"
-              >
-                Tell me about Tiger
-              </button>
-              <button 
-                onClick={() => sendMessage("Which pets are overweight?")}
-                className="px-3 py-1.5 text-sm bg-card border border-border rounded-full hover:bg-accent transition-colors"
-              >
-                Overweight pets?
-              </button>
-              <button 
-                onClick={() => sendMessage("List all pets owned by Arun Rao")}
-                className="px-3 py-1.5 text-sm bg-card border border-border rounded-full hover:bg-accent transition-colors"
-              >
-                Arun Rao's pets
-              </button>
+            <div className="flex items-center gap-3">
+              <ThemeToggle />
+              {messages.length > 0 && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={clearMessages}
+                  className="text-muted-foreground hover:text-destructive"
+                >
+                  <Trash2 className="h-4 w-4 mr-1" />
+                  Clear
+                </Button>
+              )}
             </div>
-          </div>
-        ) : (
-          messages.map((message) => (
-            <ChatMessage key={message.id} message={message} />
-          ))
-        )}
-        
-        {isLoading && messages[messages.length - 1]?.role !== 'assistant' && (
-          <div className="flex gap-3">
-            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-accent text-accent-foreground">
-              <PawPrint className="h-4 w-4" />
-            </div>
-            <div className="flex items-center gap-1.5 rounded-2xl rounded-bl-sm bg-card border border-border px-4 py-3">
-              <span className="h-2 w-2 rounded-full bg-primary/60 animate-bounce" style={{ animationDelay: '0ms' }} />
-              <span className="h-2 w-2 rounded-full bg-primary/60 animate-bounce" style={{ animationDelay: '150ms' }} />
-              <span className="h-2 w-2 rounded-full bg-primary/60 animate-bounce" style={{ animationDelay: '300ms' }} />
-            </div>
-          </div>
-        )}
-      </div>
+          </header>
 
-      {/* Input */}
-      <div className="border-t border-border bg-card/50 backdrop-blur-sm p-4">
-        <div className="mx-auto max-w-3xl">
-          <ChatInput onSend={sendMessage} isLoading={isLoading} />
+          {/* Messages */}
+          <div
+            ref={scrollRef}
+            className="flex-1 overflow-y-auto px-4 py-6 space-y-4"
+          >
+            {messages.length === 0 ? (
+              <div className="flex flex-col items-center justify-center h-full text-center">
+                <div className="relative mb-6">
+                  <div className="absolute inset-0 bg-primary/20 blur-3xl rounded-full" />
+                  <div className="relative flex h-20 w-20 items-center justify-center rounded-full bg-gradient-to-br from-primary/20 to-accent/20 border border-border">
+                    <PawPrint className="h-10 w-10 text-primary" />
+                  </div>
+                </div>
+                <h2 className="text-xl font-semibold text-foreground mb-2">
+                  Pet Care Assistant
+                </h2>
+                <p className="text-muted-foreground max-w-sm mb-4">
+                  I have access to a database of 36 pets including dogs, cats, cows, goats, parrots, and rabbits. Ask me anything!
+                </p>
+                <div className="flex flex-wrap gap-2 justify-center max-w-md">
+                  <button 
+                    onClick={() => sendMessage("Tell me about Tiger the dog")}
+                    className="px-3 py-1.5 text-sm bg-card border border-border rounded-full hover:bg-accent transition-colors"
+                  >
+                    Tell me about Tiger
+                  </button>
+                  <button 
+                    onClick={() => sendMessage("Which pets are overweight?")}
+                    className="px-3 py-1.5 text-sm bg-card border border-border rounded-full hover:bg-accent transition-colors"
+                  >
+                    Overweight pets?
+                  </button>
+                  <button 
+                    onClick={() => sendMessage("List all pets owned by Arun Rao")}
+                    className="px-3 py-1.5 text-sm bg-card border border-border rounded-full hover:bg-accent transition-colors"
+                  >
+                    Arun Rao's pets
+                  </button>
+                </div>
+              </div>
+            ) : (
+              messages.map((message) => (
+                <ChatMessage key={message.id} message={message} />
+              ))
+            )}
+            
+            {isLoading && messages[messages.length - 1]?.role !== 'assistant' && (
+              <div className="flex gap-3">
+                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-accent text-accent-foreground">
+                  <PawPrint className="h-4 w-4" />
+                </div>
+                <div className="flex items-center gap-1.5 rounded-2xl rounded-bl-sm bg-card border border-border px-4 py-3">
+                  <span className="h-2 w-2 rounded-full bg-primary/60 animate-bounce" style={{ animationDelay: '0ms' }} />
+                  <span className="h-2 w-2 rounded-full bg-primary/60 animate-bounce" style={{ animationDelay: '150ms' }} />
+                  <span className="h-2 w-2 rounded-full bg-primary/60 animate-bounce" style={{ animationDelay: '300ms' }} />
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Input */}
+          <div className="border-t border-border bg-card/50 backdrop-blur-sm p-4">
+            <div className="mx-auto max-w-3xl">
+              <ChatInput onSend={sendMessage} isLoading={isLoading} />
+            </div>
+          </div>
         </div>
       </div>
-    </div>
+    </SidebarProvider>
   );
 }

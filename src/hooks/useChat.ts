@@ -122,5 +122,6 @@ export function useChat() {
     error,
     sendMessage,
     clearMessages,
+    setMessages,
   };
 }
