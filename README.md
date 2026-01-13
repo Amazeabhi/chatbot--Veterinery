@@ -14,7 +14,7 @@ The **Vet Chatbot** is an AI-powered conversational application designed to assi
 - 🍖 Nutrition and diet suggestions
 - 🧠 AI-powered natural language understanding
 - 🌐 Web-based interactive chatbot interface
-- ⚡ Fast and user-friendly responses
+- ⚡ Fast and user-friendly responses.
 
 ---
 
